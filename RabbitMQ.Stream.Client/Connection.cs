@@ -163,12 +163,19 @@ namespace RabbitMQ.Stream.Client
                 var size = command.SizeNeeded;
                 var fullSize = dataLengthInfoBytes + size;
 
-                var mem = writer.GetMemory(fullSize);
-                WireFormatting.WriteUInt32(mem.Span, (uint)size);
-                var written = command.Write(mem.Span.Slice(dataLengthInfoBytes, size));
-                Debug.Assert(size == written);
-                writer.Advance(fullSize);
-                await writer.FlushAsync(Token).ConfigureAwait(false);
+                var mem = ArrayPool<byte>.Shared.Rent(fullSize);
+                try
+                {
+                    WireFormatting.WriteUInt32(mem, (uint)size);
+                    var written = command.Write(mem.AsSpan(dataLengthInfoBytes, size));
+                    Debug.Assert(size == written);
+                    await writer.WriteAsync(new ReadOnlyMemory<byte>(mem, 0, fullSize), Token).ConfigureAwait(false);
+                    await writer.FlushAsync(Token).ConfigureAwait(false);
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(mem);
+                }
             }
             finally
             {
