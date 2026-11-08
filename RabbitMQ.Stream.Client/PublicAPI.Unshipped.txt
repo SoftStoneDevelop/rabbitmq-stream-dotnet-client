@@ -83,6 +83,8 @@ RabbitMQ.Stream.Client.ClientParameters.AuthMechanism.get -> RabbitMQ.Stream.Cli
 RabbitMQ.Stream.Client.ClientParameters.AuthMechanism.set -> void
 RabbitMQ.Stream.Client.ClientParameters.LookupLocatorStrategy.get -> RabbitMQ.Stream.Client.ILookupLocatorStrategy
 RabbitMQ.Stream.Client.ClientParameters.LookupLocatorStrategy.set -> void
+RabbitMQ.Stream.Client.ClientParameters.CollectMetrics.get -> bool
+RabbitMQ.Stream.Client.ClientParameters.CollectMetrics.set -> void
 RabbitMQ.Stream.Client.ClientParameters.MetadataUpdateHandler
 RabbitMQ.Stream.Client.ClientParameters.OnMetadataUpdate -> RabbitMQ.Stream.Client.ClientParameters.MetadataUpdateHandler
 RabbitMQ.Stream.Client.ClientParameters.RpcTimeOut.get -> System.TimeSpan
@@ -424,6 +426,8 @@ RabbitMQ.Stream.Client.StreamSystemConfig.ConnectionPoolConfig.get -> RabbitMQ.S
 RabbitMQ.Stream.Client.StreamSystemConfig.ConnectionPoolConfig.set -> void
 RabbitMQ.Stream.Client.StreamSystemConfig.LookupLocatorStrategy.get -> RabbitMQ.Stream.Client.ILookupLocatorStrategy
 RabbitMQ.Stream.Client.StreamSystemConfig.LookupLocatorStrategy.set -> void
+RabbitMQ.Stream.Client.StreamSystemConfig.CollectMetrics.get -> bool
+RabbitMQ.Stream.Client.StreamSystemConfig.CollectMetrics.set -> void
 RabbitMQ.Stream.Client.StreamSystemConfig.RpcTimeOut.get -> System.TimeSpan
 RabbitMQ.Stream.Client.StreamSystemConfig.RpcTimeOut.set -> void
 RabbitMQ.Stream.Client.StreamSystemConfig.SocketOptions.get -> RabbitMQ.Stream.Client.SocketOptions

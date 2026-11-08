@@ -102,6 +102,11 @@ namespace RabbitMQ.Stream.Client
         /// LookupLocatorStrategy see <see cref="ILookupLocatorStrategy"/> for the strategy to reconnect the locator client in case of connection failure.
         /// </summary>
         public ILookupLocatorStrategy LookupLocatorStrategy { get; set; } = new BackOffLookupLocatorStrategy();
+
+        /// <summary>
+        /// Collecting metrics slows down performance, so if you are not monitoring metrics, it is recommended to disable their collection.
+        /// </summary>
+        public bool CollectMetrics { get; set; } = true;
     }
 
     /// <summary>
@@ -164,6 +169,7 @@ namespace RabbitMQ.Stream.Client
                 RpcTimeOut = config.RpcTimeOut,
                 SocketOptions = config.SocketOptions,
                 LookupLocatorStrategy = config.LookupLocatorStrategy,
+                CollectMetrics = config.CollectMetrics
             };
             // create the metadata client connection
             foreach (var endPoint in clientParams.Endpoints)

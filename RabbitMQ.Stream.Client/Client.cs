@@ -87,6 +87,11 @@ namespace RabbitMQ.Stream.Client
 
         public ILookupLocatorStrategy LookupLocatorStrategy { get; set; } = new BackOffLookupLocatorStrategy();
 
+        /// <summary>
+        /// Collecting metrics slows down performance, so if you are not monitoring metrics, it is recommended to disable their collection.
+        /// </summary>
+        public bool CollectMetrics { get; set; } = true;
+
         internal void FireMetadataUpdate(MetaDataUpdate metaDataUpdate)
         {
             OnMetadataUpdate?.Invoke(metaDataUpdate);
@@ -283,7 +288,11 @@ namespace RabbitMQ.Stream.Client
             // start heart beat only when the client is connected
             client.StartHeartBeat();
             Interlocked.Exchange(ref client._connectionIsOpened, 1);
-            StreamMetrics.ConnectionOpened();
+            if (client.Parameters.CollectMetrics)
+            {
+                StreamMetrics.ConnectionOpened();
+            }
+
             return client;
         }
 
@@ -311,7 +320,7 @@ namespace RabbitMQ.Stream.Client
             publishCommandsSent += 1;
             messagesSent += publishMsg.MessageCount;
 
-            if (publishers.TryGetValue(publishMsg.publisherId, out var publisher))
+            if (Parameters.CollectMetrics && publishers.TryGetValue(publishMsg.publisherId, out var publisher))
             {
                 var streamName = publisher.Item1;
                 StreamMetrics.Published(publishMsg.MessageCount, streamName);
@@ -325,7 +334,11 @@ namespace RabbitMQ.Stream.Client
         {
             try
             {
-                StreamMetrics.WrittenBytes(msg.SizeNeeded + 4);
+                if (Parameters.CollectMetrics)
+                {
+                    StreamMetrics.WrittenBytes(msg.SizeNeeded + 4);
+                }
+
                 return _connection.Write(msg);
             }
             catch (Exception e)
@@ -588,7 +601,11 @@ namespace RabbitMQ.Stream.Client
 
         internal async Task HandleIncoming(Memory<byte> frameMemory)
         {
-            StreamMetrics.ReadBytes(frameMemory.Length);
+            if (Parameters.CollectMetrics)
+            {
+                StreamMetrics.ReadBytes(frameMemory.Length);
+            }
+
             var frame = new ReadOnlySequence<byte>(frameMemory);
             WireFormatting.ReadUInt16(frame, out var tag);
             if ((tag & 0x8000) != 0)
@@ -608,8 +625,11 @@ namespace RabbitMQ.Stream.Client
                     if (publishers.TryGetValue(confirm.PublisherId, out var publisherConf))
                     {
                         var (streamName, (confirmCallback, _)) = (publisherConf);
-                        StreamMetrics.Confirmed(confirm.PublishingIds.Length, streamName);
-                        StreamMetrics.OutstandingConfirmDec(confirm.PublishingIds.Length, streamName);
+                        if (Parameters.CollectMetrics)
+                        {
+                            StreamMetrics.Confirmed(confirm.PublishingIds.Length, streamName);
+                            StreamMetrics.OutstandingConfirmDec(confirm.PublishingIds.Length, streamName);
+                        }
 
                         confirmCallback(confirm.PublishingIds);
                         if (MemoryMarshal.TryGetArray(confirm.PublishingIds, out var confirmSegment))
@@ -635,8 +655,11 @@ namespace RabbitMQ.Stream.Client
                     if (consumers.TryGetValue(deliver.SubscriptionId, out var consumerEvent))
                     {
                         var (streamName, deliverHandler) = consumerEvent;
-                        StreamMetrics.ChunkReceived(deliver.Chunk.NumEntries);
-                        StreamMetrics.Consumed(deliver.Chunk.NumRecords, streamName);
+                        if (Parameters.CollectMetrics)
+                        {
+                            StreamMetrics.ChunkReceived(deliver.Chunk.NumEntries);
+                            StreamMetrics.Consumed(deliver.Chunk.NumRecords, streamName);
+                        }
 
                         await deliverHandler.DeliverHandler(deliver).ConfigureAwait(false);
                     }
@@ -658,8 +681,11 @@ namespace RabbitMQ.Stream.Client
                     if (publishers.TryGetValue(error.PublisherId, out var publisher))
                     {
                         var (streamName, (_, errorCallback)) = publisher;
-                        StreamMetrics.Errored(error.PublishingErrors.Length, streamName);
-                        StreamMetrics.OutstandingConfirmDec(error.PublishingErrors.Length, streamName);
+                        if (Parameters.CollectMetrics)
+                        {
+                            StreamMetrics.Errored(error.PublishingErrors.Length, streamName);
+                            StreamMetrics.OutstandingConfirmDec(error.PublishingErrors.Length, streamName);
+                        }
 
                         errorCallback(error.PublishingErrors);
                     }
@@ -858,7 +884,7 @@ namespace RabbitMQ.Stream.Client
 
         private void InternalClose()
         {
-            if (Interlocked.Exchange(ref _connectionIsOpened, 0) == 1)
+            if (Interlocked.Exchange(ref _connectionIsOpened, 0) == 1 && Parameters.CollectMetrics)
             {
                 StreamMetrics.ConnectionClosed();
             }
