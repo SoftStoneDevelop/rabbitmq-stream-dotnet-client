@@ -12,6 +12,7 @@ using RabbitMQ.Stream.Client.Reliable;
 namespace RabbitMQ.Stream.Client.Benchmarks.Cases
 {
     [MemoryDiagnoser]
+    [ThreadingDiagnoser]
     [SimpleJob(RuntimeMoniker.Net80)]
     public class MetricsAffectedCase : BenchmarkBase
     {
@@ -22,7 +23,7 @@ namespace RabbitMQ.Stream.Client.Benchmarks.Cases
         private Producer _producerWithoutMetrics;
         private static readonly byte[] s_messageData = new byte[10_000];
 
-        [IterationSetup]
+        [GlobalSetup]
         public async Task GlobalSetup()
         {
             await OneTimeSetUp().ConfigureAwait(false);
