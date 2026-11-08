@@ -16,7 +16,7 @@ namespace RabbitMQ.Stream.Client.Benchmarks.Cases
     [SimpleJob(RuntimeMoniker.Net80)]
     public class MetricsAffectedCase : BenchmarkBase
     {
-        [Params(10, 100, 1_000, 10_000, 100_000)]
+        [Params(100, 1_000, 10_000)]
         public int MessagesCount;
 
         private Producer _producerWithMetrics;
@@ -28,27 +28,37 @@ namespace RabbitMQ.Stream.Client.Benchmarks.Cases
         {
             await OneTimeSetUp().ConfigureAwait(false);
 
-            var configCollectMetrics = new StreamSystemConfig()
             {
-                Endpoints = new List<EndPoint> { new IPEndPoint(IPAddress.Loopback, _container.GetMappedPublicPort(5552)) },
-                CollectMetrics = true
-            };
-            var system = await StreamSystem.Create(configCollectMetrics).ConfigureAwait(false);
-            const string StreamName = "array-pool-benchmark-stream";
-            await system.CreateStream(new StreamSpec(StreamName)).ConfigureAwait(false);
+                var systemConfigWithMetrics = new StreamSystemConfig()
+                {
+                    Endpoints = new List<EndPoint> { new IPEndPoint(IPAddress.Loopback, _container.GetMappedPublicPort(5552)) },
+                    CollectMetrics = true
+                };
 
-            var configNotCollectMetrics = new StreamSystemConfig()
+                var systemWithMetrics = await StreamSystem.Create(systemConfigWithMetrics).ConfigureAwait(false);
+
+                const string StreamWithMetricsName = "with-metrics-benchmark-stream";
+                await systemWithMetrics.CreateStream(new StreamSpec(StreamWithMetricsName)).ConfigureAwait(false);
+
+                var producerConfigWithMetrics = new ProducerConfig(systemWithMetrics, StreamWithMetricsName);
+                _producerWithMetrics = await Producer.Create(producerConfigWithMetrics).ConfigureAwait(false);
+            }
+
             {
-                Endpoints = new List<EndPoint> { new IPEndPoint(IPAddress.Loopback, _container.GetMappedPublicPort(5552)) },
-                CollectMetrics = false
-            };
-            var system2 = await StreamSystem.Create(configNotCollectMetrics).ConfigureAwait(false);
+                var systemConfigWithoutMetrics = new StreamSystemConfig()
+                {
+                    Endpoints = new List<EndPoint> { new IPEndPoint(IPAddress.Loopback, _container.GetMappedPublicPort(5552)) },
+                    CollectMetrics = false
+                };
 
-            var configWithMetrics = new ProducerConfig(system2, StreamName);
-            _producerWithMetrics = await Producer.Create(configWithMetrics).ConfigureAwait(false);
+                var systemWithoutMetrics = await StreamSystem.Create(systemConfigWithoutMetrics).ConfigureAwait(false);
 
-            var configWithoutMetrics = new ProducerConfig(system2, StreamName);
-            _producerWithoutMetrics = await Producer.Create(configWithoutMetrics).ConfigureAwait(false);
+                const string StreamWithoutMetricsName = "without-metrics-benchmark-stream";
+                await systemWithoutMetrics.CreateStream(new StreamSpec(StreamWithoutMetricsName)).ConfigureAwait(false);
+
+                var producerWithoutMetrics = new ProducerConfig(systemWithoutMetrics, StreamWithoutMetricsName);
+                _producerWithoutMetrics = await Producer.Create(producerWithoutMetrics).ConfigureAwait(false);
+            }
         }
 
         [GlobalCleanup]
